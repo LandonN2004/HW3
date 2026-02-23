@@ -1,5 +1,6 @@
-# hw3c.py
-# MAE 3403 - HW3(c)
+Name:Landon Norris
+Course: MAE 3403 - Computer Methods
+File HW3C
 # Use Cholesky if A is symmetric positive definite; otherwise use Doolittle (LU)
 
 from math import sqrt
