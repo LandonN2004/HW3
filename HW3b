@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
+Name:Landon Norris
+Course: MAE 3403 - Computer Methods
+File HW3b
 """
-HW3b - MAE 3403
 Compute t-distribution CDF using:
 F(z) = K_m * ∫_{-∞}^{z} (1 + u^2/m)^(-(m+1)/2) du
 K_m = Γ((m+1)/2) / (sqrt(m*pi) * Γ(m/2))
