@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
+Name:Landon Norris
+Course: MAE 3403 - Computer Methods
+File HW3A
 """
-HW3a - MAE 3403
 Reuses NumericalMethods.py for:
 - GPDF (normal pdf)
 - Simpson (integration)
