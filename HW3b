@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""
+HW3b - MAE 3403
+Compute t-distribution CDF using:
+F(z) = K_m * ∫_{-∞}^{z} (1 + u^2/m)^(-(m+1)/2) du
+K_m = Γ((m+1)/2) / (sqrt(m*pi) * Γ(m/2))
+
+Uses Simpson's rule and symmetry:
+F(z) = 0.5 ± K_m * ∫_0^{|z|} integrand(u) du
+"""
+
+import math
+
+
+def simpson(f, a, b, N=12000):
+    if N % 2 == 1:
+        N += 1
+    if a == b:
+        return 0.0
+    if a > b:
+        a, b = b, a
+        sign = -1.0
+    else:
+        sign = 1.0
+
+    h = (b - a) / N
+    s = f(a) + f(b)
+    for i in range(1, N):
+        x = a + i * h
+        s += (4.0 if i % 2 == 1 else 2.0) * f(x)
+    return sign * (h / 3.0) * s
+
+
+def Km(m: int) -> float:
+    return math.gamma((m + 1) / 2.0) / (math.sqrt(m * math.pi) * math.gamma(m / 2.0))
+
+
+def integrand(u: float, m: int) -> float:
+    return (1.0 + (u * u) / m) ** (-(m + 1) / 2.0)
+
+
+def t_cdf(z: float, m: int, N: int = 12000) -> float:
+    k = Km(m)
+    if z == 0.0:
+        return 0.5
+    a = 0.0
+    b = abs(z)
+    area = simpson(lambda u: integrand(u, m), a, b, N=N)
+    return 0.5 + (k * area if z > 0 else -k * area)
+
+
+def get_int(prompt: str) -> int:
+    while True:
+        try:
+            return int(input(prompt).strip())
+        except ValueError:
+            print("Enter a valid integer.")
+
+
+def get_float(prompt: str) -> float:
+    while True:
+        try:
+            return float(input(prompt).strip())
+        except ValueError:
+            print("Enter a valid number.")
+
+
+def main():
+    print("HW3b - t-distribution CDF via Simpson + gamma")
+    N = 12000
+    n_in = input("Simpson subintervals N (even, default 12000): ").strip()
+    if n_in:
+        try:
+            N = int(n_in)
+        except ValueError:
+            print("Invalid N; using 12000.")
+            N = 12000
+    if N % 2 == 1:
+        N += 1
+
+    while True:
+        m = get_int("\nEnter degrees of freedom m (e.g., 7, 11, 15): ")
+        z = get_float("Enter z: ")
+        F = t_cdf(z, m, N=N)
+        print(f"F(z) for m={m}, z={z} => {F:.10f}")
+
+        if input("Another? [y/n]: ").strip().lower() not in ("y", "yes"):
+            break
+
+
+if __name__ == "__main__":
+    main()
