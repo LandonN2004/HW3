@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""
+HW3a - MAE 3403
+Reuses NumericalMethods.py for:
+- GPDF (normal pdf)
+- Simpson (integration)
+- Probability (single-sided P(x<c) or P(x>c))
+- Secant (root finding)
+
+Adds:
+- centered interval probability P(mu-d < x < mu+d)
+- outside centered interval probability
+- interactive I/O: either (c -> P) or (P -> c)
+"""
+
+import NumericalMethods as NM
+
+
+def prob_centered(mu: float, sig: float, c: float, N: int = 200) -> float:
+    """
+    P(mu-(c-mu) < x < mu+(c-mu)) where d = |c-mu|
+    Integrate from (mu-d) to (mu+d)
+    """
+    d = abs(c - mu)
+    lhl = mu - d
+    rhl = mu + d
+    return NM.Simpson(NM.GPDF, (mu, sig, lhl, rhl), N=N)
+
+
+def prob_outside(mu: float, sig: float, c: float, N: int = 200) -> float:
+    """
+    P(x < mu-d OR x > mu+d) = 1 - centered
+    """
+    pc = prob_centered(mu, sig, c, N=N)
+    return 1.0 - pc
+
+
+def get_float(prompt: str) -> float:
+    while True:
+        try:
+            return float(input(prompt).strip())
+        except ValueError:
+            print("Enter a valid number.")
+
+
+def get_choice(prompt: str, choices: tuple[str, ...]) -> str:
+    choices_l = [c.lower() for c in choices]
+    while True:
+        v = input(prompt).strip().lower()
+        if v in choices_l:
+            return v
+        print(f"Choose one of: {', '.join(choices)}")
+
+
+def compute_probability(prob_type: str, mu: float, sig: float, c: float, N: int) -> float:
+    prob_type = prob_type.lower()
+    if prob_type == "left":
+        return NM.Probability(NM.GPDF, (mu, sig), c, GT=False)  # P(x < c)
+    if prob_type == "right":
+        return NM.Probability(NM.GPDF, (mu, sig), c, GT=True)   # P(x > c)
+    if prob_type == "centered":
+        return prob_centered(mu, sig, c, N=N)
+    if prob_type == "outside":
+        return prob_outside(mu, sig, c, N=N)
+    raise ValueError("prob_type must be left/right/centered/outside")
+
+
+def secant_find_c(prob_type: str, mu: float, sig: float, p_des: float, N: int) -> float:
+    """
+    Solve compute_probability(prob_type, mu, sig, c) - p_des = 0 using your Secant().
+    """
+    lo = mu - 5.0 * sig
+    hi = mu + 5.0 * sig
+
+    # simple initial guesses
+    if prob_type in ("centered", "outside"):
+        x0 = mu + 0.5 * sig
+        x1 = mu + 1.5 * sig
+    else:
+        x0 = mu - 1.0 * sig
+        x1 = mu + 1.0 * sig
+
+    # clamp to truncation interval your Probability() uses
+    x0 = max(lo, min(hi, x0))
+    x1 = max(lo, min(hi, x1))
+
+    def g(c):
+        return compute_probability(prob_type, mu, sig, c, N=N) - p_des
+
+    c_sol, _iters = NM.Secant(g, x0, x1, maxiter=50, xtol=1e-6)
+    return c_sol
+
+
+def main():
+    print("HW3a - Normal probabilities (Simpson) + Secant for c")
+    mu = get_float("Enter mu: ")
+    sig = get_float("Enter sigma (>0): ")
+    if sig <= 0:
+        raise SystemExit("sigma must be > 0")
+
+    # N used by centered/outside; your Probability() currently uses N=200 internally :contentReference[oaicite:4]{index=4}
+    N = 200
+    n_in = input("Simpson subintervals N for centered/outside (even, default 200): ").strip()
+    if n_in:
+        try:
+            N = int(n_in)
+        except ValueError:
+            print("Invalid N; using 200.")
+            N = 200
+    if N % 2 == 1:
+        N += 1
+
+    prob_type = get_choice("Choose type [left/right/centered/outside]: ", ("left", "right", "centered", "outside"))
+    mode = get_choice("Are you entering c or P? [c/p]: ", ("c", "p"))
+
+    if mode == "c":
+        c = get_float("Enter c: ")
+        p = compute_probability(prob_type, mu, sig, c, N=N)
+        print(f"\nP({prob_type}, c={c}) = {p:.10f}")
+    else:
+        p_des = get_float("Enter desired probability P (0..1): ")
+        if not (0.0 <= p_des <= 1.0):
+            raise SystemExit("P must be between 0 and 1")
+        c = secant_find_c(prob_type, mu, sig, p_des, N=N)
+        p_check = compute_probability(prob_type, mu, sig, c, N=N)
+        print("\nSecant solution:")
+        print(f"Desired P = {p_des:.10f}")
+        print(f"c ≈ {c:.10f}")
+        print(f"Check P ≈ {p_check:.10f}")
+
+
+if __name__ == "__main__":
+    main()
